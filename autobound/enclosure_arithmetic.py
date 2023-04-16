@@ -382,10 +382,9 @@ def enclose_enclosure(
   orig_degree = len(enclosure) - 1
   if orig_degree <= max_degree:
     return enclosure
-  else:
-    new_final_coefficient = polynomials.eval_taylor_enclosure(
-        enclosure[max_degree:], trust_region, set_arithmetic.np_like)
-    return TaylorEnclosure(enclosure[:max_degree] + (new_final_coefficient,))
+  new_final_coefficient = polynomials.eval_taylor_enclosure(
+      enclosure[max_degree:], trust_region, set_arithmetic.np_like)
+  return TaylorEnclosure(enclosure[:max_degree] + (new_final_coefficient,))
 
 
 def expand_multiple_dims(a: NDArray, n: int, axis=None) -> NDArray:

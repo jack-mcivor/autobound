@@ -62,10 +62,7 @@ def softplus(x: float) -> float:
 
 
 def softplus_derivative(order: int, x: float) -> float:
-  if order == 0:
-    return softplus(x)
-  else:
-    return sigmoid_derivative(order-1, x)
+  return softplus(x) if order == 0 else sigmoid_derivative(order-1, x)
 
 
 def swish(x: float) -> float:
