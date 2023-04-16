@@ -70,14 +70,11 @@ def replace(pattern: jax.core.Jaxpr,
       for v in pattern_graph.intermediate_variables()
   )
   replacement_graph = _jaxpr_to_graph(replacement, offset=max_count + 1)
-  # In the replacement graph, replace inputs/outputs with those in the pattern
-  # graph.
-  intermediate_variable_map = {}
-  for u, v in itertools.chain(
-      zip(replacement_graph.inputs, pattern_graph.inputs),
-      zip(replacement_graph.outputs, pattern_graph.outputs),
-  ):
-    intermediate_variable_map[u] = v
+  intermediate_variable_map = dict(
+      itertools.chain(
+          zip(replacement_graph.inputs, pattern_graph.inputs),
+          zip(replacement_graph.outputs, pattern_graph.outputs),
+      ))
   replacement_operations = [
       e.subs(intermediate_variable_map) for e in replacement_graph.operations
   ]
@@ -193,10 +190,7 @@ def _graph_to_jaxpr(h: graph_editor.ComputationGraph) -> jax.core.Jaxpr:
 
 
 def _can_bind(u, v):
-  if u[0]:
-    return v[0]
-  else:
-    return (not v[0]) and (u[1] == v[1])
+  return v[0] if u[0] else (not v[0]) and (u[1] == v[1])
 
 
 # Set of Jaxpr equation params we ignore for matching purposes.

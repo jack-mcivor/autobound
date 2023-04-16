@@ -95,14 +95,11 @@ def match(
       return None
     for u, v in itertools.chain(zip(p.inputs, s.inputs),
                                 zip(p.outputs, s.outputs)):
-      if u in vertex_map:
-        if vertex_map[u] != v:
-          return None
-      else:
-        if can_bind(u, v):
-          vertex_map[u] = v
-        else:
-          return None
+      if (u in vertex_map and vertex_map[u] != v
+          or u not in vertex_map and not can_bind(u, v)):
+        return None
+      elif u not in vertex_map:
+        vertex_map[u] = v
   return vertex_map
 
 

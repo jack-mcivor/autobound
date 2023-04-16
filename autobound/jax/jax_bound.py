@@ -88,7 +88,7 @@ def taylor_bounds(
 
   jaxpr_factory = jax.make_jaxpr(f)
   def bound_fun(x0: jnp.array,
-                x_trust_region: types.Interval) -> TaylorBounds:
+                  x_trust_region: types.Interval) -> TaylorBounds:
     trust_region = interval_arithmetic.IntervalArithmetic(jnp).subtract(
         x_trust_region, x0)
 
@@ -124,12 +124,11 @@ def taylor_bounds(
     )
 
     def get_intermediate(
-        invar: Union[jax.core.Var, jax.core.Literal]) -> _IntermediateEnclosure:
+            invar: Union[jax.core.Var, jax.core.Literal]) -> _IntermediateEnclosure:
       if isinstance(invar, jax.core.Var):
         return var_to_intermediate[invar]
-      else:
-        assert isinstance(invar, jax.core.Literal)
-        return _constant_intermediate_enclosure(invar.val)
+      assert isinstance(invar, jax.core.Literal)
+      return _constant_intermediate_enclosure(invar.val)
 
     for eqn in jaxpr.eqns:
       invar_intermediates = [get_intermediate(invar) for invar in eqn.invars]
@@ -381,11 +380,9 @@ def _conv_general_dilated_pushforward_fun(arithmetic):
 def _dot_general_pushforward_fun(arithmetic):
   """Returns function that implements dot_general on enclosures."""
   def fun(lhs_intermediate: _IntermediateEnclosure,
-          rhs_intermediate: _IntermediateEnclosure,
-          **params):
-    a_contracting_dims = set(a  # pylint: disable=g-complex-comprehension
-                             for t in params['dimension_numbers']
-                             for a in t[0])
+            rhs_intermediate: _IntermediateEnclosure,
+            **params):
+    a_contracting_dims = {a for t in params['dimension_numbers'] for a in t[0]}
     def pairwise_batched_bilinear(a: jnp.array, b: jnp.array,
                                   p: int, q: int) -> jnp.array:
       transposed_output = jax.lax.dot_general_p.bind(a, b, **params)
@@ -403,11 +400,13 @@ def _dot_general_pushforward_fun(arithmetic):
       )
       assert len(set(perm)) == n, (p_start, p, q, n, perm)
       return jnp.transpose(transposed_output, axes=perm)
+
     return arithmetic.arbitrary_bilinear(
         lhs_intermediate.enclosure,
         rhs_intermediate.enclosure,
         pairwise_batched_bilinear
     )
+
   return fun
 
 

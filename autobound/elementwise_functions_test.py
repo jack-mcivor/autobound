@@ -39,13 +39,12 @@ def get_jax_callable(function_id):
     # == 1, whereas our tests assume that every local minimum should have a
     # gradient of 0.
     return jnp.sign
-  if function_id.name in jax_funs:
-    f = jax_funs[function_id.name]
-    for _ in range(function_id.derivative_order):
-      f = jax.grad(f)
-    return f
-  else:
+  if function_id.name not in jax_funs:
     raise NotImplementedError(function_id)
+  f = jax_funs[function_id.name]
+  for _ in range(function_id.derivative_order):
+    f = jax.grad(f)
+  return f
 
 
 class TestCase(test_utils.TestCase, parameterized.TestCase):

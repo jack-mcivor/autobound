@@ -232,10 +232,7 @@ def sharp_enclosure_monotonic_derivative(
                             taylor_coefficients_at_x0,
                             np_like=np_like)
   a, b = trust_region
-  if increasing:
-    final_interval = (ratio(a), ratio(b))
-  else:
-    final_interval = (ratio(b), ratio(a))
+  final_interval = (ratio(a), ratio(b)) if increasing else (ratio(b), ratio(a))
   return ElementwiseTaylorEnclosure(
       tuple(taylor_coefficients_at_x0[:degree]) + (final_interval,)
   )

@@ -91,9 +91,9 @@ class TestCase(parameterized.TestCase, test_utils.TestCase):
   def expected_taylor_coefficients(cls, f, x0, degree):
     """Return Taylor polynomial coefficients for elementwise function."""
     is_scalar_valued = np.asarray(f(x0)).ndim == 0
+    # Compute expected Taylor polynomial coefficients using jax.grad.
+    expected_coefficients = []
     if is_scalar_valued:
-      # Compute expected Taylor polynomial coefficients using jax.grad.
-      expected_coefficients = []
       ith_deriv = f
       i_factorial = 1
       for i in range(degree + 1):
@@ -101,9 +101,7 @@ class TestCase(parameterized.TestCase, test_utils.TestCase):
           i_factorial *= i
         expected_coefficients.append(ith_deriv(x0) / i_factorial)
         ith_deriv = jax.grad(ith_deriv)
-      return expected_coefficients
     else:
-      expected_coefficients = []
       for i in range(degree + 1):
         if i == 0:
           expected_coefficients.append(f(x0))
@@ -113,7 +111,8 @@ class TestCase(parameterized.TestCase, test_utils.TestCase):
           expected_coefficients.append(grad_diag)
         else:
           raise NotImplementedError(i)
-      return expected_coefficients
+
+    return expected_coefficients
 
   @parameterized.named_parameters(
       (

@@ -135,9 +135,8 @@ def get_function(function_id: FunctionId,
     k = function_id.derivative_order
     if k == 0:
       return np_like.log
-    else:
-      sign = -1 if k % 2 == 0 else 1
-      return lambda x: sign * math.factorial(k-1) * np_like.asarray(x)**-k
+    sign = -1 if k % 2 == 0 else 1
+    return lambda x: sign * math.factorial(k-1) * np_like.asarray(x)**-k
   elif function_id.name == SIGMOID.name:
     return functools.partial(_sigmoid_derivative,
                              function_id.derivative_order, np_like=np_like)

@@ -139,10 +139,7 @@ class IntervalArithmetic:
   def as_interval_or_ndarray(
       self,
       a: Union[NDArrayLike, IntervalLike]) -> Union[NDArray, Interval]:
-    if isinstance(a, tuple):
-      return self.as_interval(a)
-    else:
-      return self.np_like.asarray(a)
+    return self.as_interval(a) if isinstance(a, tuple) else self.np_like.asarray(a)
 
   def multiply(
       self,
@@ -215,28 +212,27 @@ class IntervalArithmetic:
     """Returns a**exponent (element-wise)."""
     a = self.as_interval_or_ndarray(a)
     a_is_interval = isinstance(a, tuple)
-    if a_is_interval:
-      if exponent < 0:
-        raise NotImplementedError(exponent)
-      elif exponent == 0:
-        return self.np_like.ones_like(a[0])
-      else:
-        # For scalars u and v, with u <= v, and even K, the left end point of
-        # [u, v]**K is 0 if u <= 0 <= v, and is min{u**K, v**K} otherwise.
-        # If K is odd, the left end point is u**K.  The expression for
-        # min_vals below handles all cases.
-        #
-        # The right and point is always max{u**K, v**K}, giving a simpler
-        # expression for max_vals.
-        contains_zero = self.np_like.logical_and(a[0] < 0, a[1] > 0)
-        pow0 = a[0]**exponent
-        pow1 = a[1]**exponent
-        min_vals = functools.reduce(self.np_like.minimum,
-                                    [pow0, pow1, (1-contains_zero)*pow0])
-        max_vals = self.np_like.maximum(pow0, pow1)
-        return (min_vals, max_vals)
-    else:
+    if not a_is_interval:
       return self.np_like.power(a, exponent)
+    if exponent < 0:
+      raise NotImplementedError(exponent)
+    elif exponent == 0:
+      return self.np_like.ones_like(a[0])
+    else:
+      # For scalars u and v, with u <= v, and even K, the left end point of
+      # [u, v]**K is 0 if u <= 0 <= v, and is min{u**K, v**K} otherwise.
+      # If K is odd, the left end point is u**K.  The expression for
+      # min_vals below handles all cases.
+      #
+      # The right and point is always max{u**K, v**K}, giving a simpler
+      # expression for max_vals.
+      contains_zero = self.np_like.logical_and(a[0] < 0, a[1] > 0)
+      pow0 = a[0]**exponent
+      pow1 = a[1]**exponent
+      min_vals = functools.reduce(self.np_like.minimum,
+                                  [pow0, pow1, (1-contains_zero)*pow0])
+      max_vals = self.np_like.maximum(pow0, pow1)
+      return (min_vals, max_vals)
 
   def shape(self, a: Union[IntervalLike, NDArrayLike]):
     # Note: calling tuple(...) is necessary when self.np_like is
@@ -273,13 +269,12 @@ class IntervalArithmetic:
       self,
       a: Union[NDArrayLike, IntervalLike], n: int) -> Union[NDArray, Interval]:
     """Interval variant of _generalized_diag_ndarray."""
-    if isinstance(a, tuple):
-      if len(a) != 2:
-        raise ValueError()
-      return (_generalized_diag_ndarray(a[0], n, self.np_like),
-              _generalized_diag_ndarray(a[1], n, self.np_like))
-    else:
+    if not isinstance(a, tuple):
       return _generalized_diag_ndarray(a, n, self.np_like)
+    if len(a) != 2:
+      raise ValueError()
+    return (_generalized_diag_ndarray(a[0], n, self.np_like),
+            _generalized_diag_ndarray(a[1], n, self.np_like))
 
 
 def _generalized_diag_ndarray(a: NDArrayLike, n: int,
@@ -327,11 +322,9 @@ def _ndarray_outer_product(a: NDArrayLike,
   b = np_like.asarray(b)
   if batch_dims == 0:
     return np_like.tensordot(a, b, 0)
-  else:
-    a_axes = tuple(range(a.ndim))
-    b_non_batch_axes = tuple(range(a.ndim, a.ndim + b.ndim - batch_dims))
-    b_axes = tuple(range(batch_dims)) + b_non_batch_axes
-    output_axes = a_axes + b_non_batch_axes
-    eq = (_stringify(a_axes) + ',' + _stringify(b_axes) +
-          '->' + _stringify(output_axes))
-    return np_like.einsum(eq, a, b)
+  a_axes = tuple(range(a.ndim))
+  b_non_batch_axes = tuple(range(a.ndim, a.ndim + b.ndim - batch_dims))
+  b_axes = tuple(range(batch_dims)) + b_non_batch_axes
+  output_axes = a_axes + b_non_batch_axes
+  eq = f'{_stringify(a_axes)},{_stringify(b_axes)}->{_stringify(output_axes)}'
+  return np_like.einsum(eq, a, b)
